@@ -12,7 +12,7 @@ import (
 func get_int_from_str(str string) (num int) {
     _,err := fmt.Sscanf(strings.TrimSpace(str),"Game %d",&num)
     if err != nil {
-        log.Fatal("failed to read num,color pair ",err)
+        log.Fatal("failed to read game id ",err)
     }
     return num
 }
@@ -20,7 +20,7 @@ func get_int_from_str(str string) (num int) {
 func get_pair_from_str(str string) (color string,num int) {
     _,err := fmt.Sscanf(strings.TrimSpace(str),"%d %s",&num,&color)
     if err != nil {
-        log.Fatal("failed to read game num ",err)
+        log.Fatal("failed to read num,color ",err)
     }
     color,_ = strings.CutSuffix(color,",")
     return color,num
