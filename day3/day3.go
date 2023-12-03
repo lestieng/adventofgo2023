@@ -13,31 +13,26 @@ func parseline(line string) (numleft []int,numright []int,
                             nums []int,syms []int) {
     concat := false
     numstr := ""
-    var numleft_curr int
     for i,c := range line {
         if unicode.IsDigit(c) {
            if !concat {//start of new number
-                numleft_curr = i
+                numleft = append(numleft,i)
                 concat = true
             } 
             numstr += string(c)
         } else {
             if concat {//end of number
                 concat = false 
-                numleft = append(numleft,numleft_curr)
                 numright = append(numright,i-1)
                 num,_ := strconv.Atoi(numstr)
                 numstr = ""
                 nums = append(nums,num)
             }
-            if c == '.' { continue } // assume non '.' is a valid symbol
-            syms = append(syms,i)
+            if c != '.' { syms = append(syms,i) }// assume non '.' is a valid symbol
         }
     }
     if concat {// last number on line ends on the right edge
-        i := len(line)
-        numleft = append(numleft,numleft_curr)
-        numright = append(numright,i)
+        numright = append(numright,len(line)-1)
         num,_ := strconv.Atoi(numstr)
         nums = append(nums,num)
     }
@@ -48,18 +43,16 @@ func parseline2(line string) (numleft []int,numright []int,
                             nums []int,syms []int) {
     concat := false
     numstr := ""
-    var numleft_curr int
     for i,c := range line {
         if unicode.IsDigit(c) {
            if !concat {
-                numleft_curr = i
+                numleft = append(numleft,i)
                 concat = true
             } 
             numstr += string(c)
         } else {
             if concat {
                 concat = false 
-                numleft = append(numleft,numleft_curr)
                 numright = append(numright,i-1)
                 num,_ := strconv.Atoi(numstr)
                 numstr = ""
@@ -69,25 +62,17 @@ func parseline2(line string) (numleft []int,numright []int,
         }
     }
     if concat { 
-        i := len(line)
-        numleft = append(numleft,numleft_curr)
-        numright = append(numright,i)
+        numright = append(numright,len(line)-1)
         num,_ := strconv.Atoi(numstr)
         nums = append(nums,num)
     }
     return numleft,numright,nums,syms
 }
 
-func valid_number_logic_line(left int,right int,syms []int) bool {
-    for _,sym := range syms {
-        if left-1 == sym || right+1 == sym {
-            return true
-        } 
-    }
-    return false
-}
-
-func valid_number_logic_updown(left int,right int,syms []int) bool {
+func valid_number_logic(left int,right int,syms []int) bool {
+    // valid number could have symbol(s) on lines above or below
+    // at line positions start-1 to end+1
+    // or on same line at start-1 and/or end+1
     for _,sym := range syms {
         if sym >= left-1 && sym <= right+1 {
             return true
@@ -97,37 +82,23 @@ func valid_number_logic_updown(left int,right int,syms []int) bool {
 }
 
 func find_valid_number(numleft []int,numright[]int,nums []int,
-                        syms []int,syms_curr []int,syms_next []int, mode int,
+                        syms_prev []int,syms_curr []int,syms_next []int, mode int,
                         ) (line_ans int) {
     // mode = 0, first line; mode = 1, normal; mode = 2, last line
     for i,num := range nums {
-        adjacent := valid_number_logic_line(numleft[i],numright[i],syms_curr)
+        adjacent := valid_number_logic(numleft[i],numright[i],syms_curr)
         if !adjacent && mode <= 1 {
-            adjacent = valid_number_logic_updown(numleft[i],numright[i],
-                                                syms_next)
+            adjacent = valid_number_logic(numleft[i],numright[i],syms_next)
         }
         if !adjacent && mode > 0 {
-            adjacent = valid_number_logic_updown(numleft[i],numright[i],
-                                                syms)
+            adjacent = valid_number_logic(numleft[i],numright[i],syms_prev)
         }
         if adjacent { line_ans +=  num }
     }
     return line_ans
 }
 
-func gear_ratio_logic_line(numleft []int,numright []int,nums []int,sym int,
-                            gear_nums []int) (gear_nums_out []int) {
-    gear_nums_out = gear_nums
-    for j,left := range numleft {
-        if left-1 == sym || numright[j]+1 == sym {
-            gear_nums_out = append(gear_nums_out,nums[j])
-        } 
-        if len(gear_nums_out) > 2 { break }
-    }
-    return gear_nums_out
-}
-
-func gear_ratio_logic_updown(numleft []int,numright []int,nums []int,sym int,
+func gear_ratio_logic(numleft []int,numright []int,nums []int,sym int,
                             gear_nums []int) ( gear_nums_out []int) {
     gear_nums_out = gear_nums
     for j,left := range numleft {
@@ -145,14 +116,14 @@ func find_gear_ratio(numleft_prev []int,numleft []int,numleft_next []int,
                     syms []int, mode int) (line_ans int) {
     // mode = 0, first line; mode = 1, normal; mode = 2, last line
     for _,sym := range syms {
-        gear_nums := gear_ratio_logic_line(numleft,numright,nums,sym,nil)
+        gear_nums := gear_ratio_logic(numleft,numright,nums,sym,nil)
         if len(gear_nums) < 3 && mode <= 1 {
-            gear_nums = gear_ratio_logic_updown(numleft_next,
-                                    numright_next,nums_next,sym,gear_nums) 
+            gear_nums = gear_ratio_logic(numleft_next,numright_next,
+                                            nums_next,sym,gear_nums) 
         }
         if len(gear_nums) < 3 && mode > 0 {
-            gear_nums = gear_ratio_logic_updown(numleft_prev,
-                                    numright_prev,nums_prev,sym,gear_nums) 
+            gear_nums = gear_ratio_logic(numleft_prev,numright_prev,
+                                            nums_prev,sym,gear_nums) 
         }
         if len(gear_nums) == 2 { line_ans += gear_nums[0]*gear_nums[1] }
     }
@@ -167,23 +138,23 @@ func solution1(scanner *bufio.Scanner) (ans int) {
     _ = scanner.Scan()
     next_line := scanner.Text()
     _,_,_,syms_next := parseline(next_line)
-    ans += find_valid_number(numleft,numright,nums,[]int{0},syms_curr,syms_next,0)
-    not_done := true
-    for ; not_done; {//for rest of lines; at start each iter: current=prev
+    ans += find_valid_number(numleft,numright,nums,[]int{0},
+                                    syms_curr,syms_next,0)
+    for ; ; {//for rest of lines; at start each iter: current=prev
         if !scanner.Scan() { // on last line
-            _,_,_,syms := parseline(current_line)
+            _,_,_,syms_prev := parseline(current_line)
             numleft,numright,nums,syms_curr := parseline(next_line)
             ans += find_valid_number(numleft,numright,nums,
-                                    syms,syms_curr,syms_next,2)
-            not_done = false
+                            syms_prev,syms_curr,syms_next,2)
+            break
         } else {
-            _,_,_,syms := parseline(current_line)
+            _,_,_,syms_prev := parseline(current_line)
             current_line = next_line
             numleft,numright,nums,syms_curr := parseline(current_line)
             next_line = scanner.Text()
             _,_,_,syms_next := parseline(next_line)
             ans += find_valid_number(numleft,numright,nums,
-                                    syms,syms_curr,syms_next,1)
+                            syms_prev,syms_curr,syms_next,1)
         }
     }
     return ans
@@ -198,18 +169,17 @@ func solution2(scanner *bufio.Scanner) (ans int) {
     next_line := scanner.Text()
     numleft_next,numright_next,nums_next,_ := parseline2(next_line)
     ans += find_gear_ratio([]int{0},numleft,numleft_next,[]int{0},
-                            numright,numright_next,[]int{0},
-                            nums,nums_next,syms_curr,0)
+                                numright,numright_next,[]int{0},
+                                nums,nums_next,syms_curr,0)
 
-    not_done := true
-    for ; not_done; {//for rest of lines; at start each iter: current=prev
+    for ; ; {//for rest of lines; at start each iter: current=prev
         if !scanner.Scan() { // on last line
             numleft_prev,numright_prev,nums_prev,_ := parseline2(current_line)
             numleft,numright,nums,syms_curr := parseline2(next_line)
             ans += find_gear_ratio(numleft_prev,numleft,numleft_next,
                                 numright_prev,numright,numright_next,
                                 nums_prev,nums,nums_next,syms_curr,2)
-            not_done = false
+            break
         } else {
             numleft_prev,numright_prev,nums_prev,_ := parseline2(current_line)
             current_line = next_line
