@@ -167,24 +167,23 @@ func solution1(scanner *bufio.Scanner) (ans int) {
     _ = scanner.Scan()
     next_line := scanner.Text()
     _,_,_,syms_next       := parseline(next_line)
-    ans += find_valid_number(numleft,numright,nums, 
-        []int{0},syms_curr,syms_next,0)
+    ans += find_valid_number(numleft,numright,nums,[]int{0},syms_curr,syms_next,0)
     not_done := true
     for ; not_done; {//for rest of lines; at start each iter: current=prev
         if !scanner.Scan() { // on last line
             _,_,_,syms := parseline(current_line)
             numleft,numright,nums,syms_curr := parseline(next_line)
             ans += find_valid_number(numleft,numright,nums,
-                syms,syms_curr,syms_next,2)
+                                    syms,syms_curr,syms_next,2)
             not_done = false
         } else {
             _,_,_,syms := parseline(current_line)
             current_line = next_line
             numleft,numright,nums,syms_curr := parseline(current_line)
             next_line = scanner.Text()
-            _,_,_,syms_next       := parseline(next_line)
+            _,_,_,syms_next := parseline(next_line)
             ans += find_valid_number(numleft,numright,nums,
-                syms,syms_curr,syms_next,1)
+                                    syms,syms_curr,syms_next,1)
         }
     }
     return ans
@@ -199,17 +198,17 @@ func solution2(scanner *bufio.Scanner) (ans int) {
     next_line := scanner.Text()
     numleft_next,numright_next,nums_next,_ := parseline2(next_line)
     ans += find_gear_ratio([]int{0},numleft,numleft_next,[]int{0},
-        numright,numright_next,[]int{0},
-        nums,nums_next,syms_curr,0)
+                            numright,numright_next,[]int{0},
+                            nums,nums_next,syms_curr,0)
 
     not_done := true
     for ; not_done; {//for rest of lines; at start each iter: current=prev
         if !scanner.Scan() { // on last line
-            numleft_prev,numright_prev,nums_prev,_ := parseline(current_line)
-            numleft,numright,nums,syms_curr := parseline(next_line)
+            numleft_prev,numright_prev,nums_prev,_ := parseline2(current_line)
+            numleft,numright,nums,syms_curr := parseline2(next_line)
             ans += find_gear_ratio(numleft_prev,numleft,numleft_next,
-                numright_prev,numright,numright_next,
-                nums_prev,nums,nums_next,syms_curr,2)
+                                numright_prev,numright,numright_next,
+                                nums_prev,nums,nums_next,syms_curr,2)
             not_done = false
         } else {
             numleft_prev,numright_prev,nums_prev,_ := parseline2(current_line)
@@ -218,8 +217,8 @@ func solution2(scanner *bufio.Scanner) (ans int) {
             next_line = scanner.Text()
             numleft_next,numright_next,nums_next,_ := parseline2(next_line)
             ans += find_gear_ratio(numleft_prev,numleft,numleft_next,
-                numright_prev,numright,numright_next,
-                nums_prev,nums,nums_next,syms_curr,1)
+                                numright_prev,numright,numright_next,
+                                nums_prev,nums,nums_next,syms_curr,1)
         }
     }
     return ans
