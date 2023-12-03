@@ -166,7 +166,7 @@ func solution1(scanner *bufio.Scanner) (ans int) {
     numleft,numright,nums,syms_curr := parseline(current_line)
     _ = scanner.Scan()
     next_line := scanner.Text()
-    _,_,_,syms_next       := parseline(next_line)
+    _,_,_,syms_next := parseline(next_line)
     ans += find_valid_number(numleft,numright,nums,[]int{0},syms_curr,syms_next,0)
     not_done := true
     for ; not_done; {//for rest of lines; at start each iter: current=prev
