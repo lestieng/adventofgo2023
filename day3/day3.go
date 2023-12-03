@@ -75,7 +75,7 @@ func parseline2(linestr string) (line lineData) {
         line.nums = append(line.nums,num)
     }
     line.active = true
-    return line //numleft,numright,nums,syms
+    return line 
 }
 
 func valid_number_logic(left int,right int,syms []int) bool {
