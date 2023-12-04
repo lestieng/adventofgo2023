@@ -13,7 +13,7 @@ import (
 func parse_get_score(line string) (score int) {
     _,base,_ := strings.Cut(line,":") // discard text before ":"
     first,second,_ := strings.Cut(base,"|") // split on "|"
-    reg := regexp.MustCompile(`[0-9]+`)
+    reg := regexp.MustCompile(`\d+`)
     winning := make(map[int]int,0)
     // get winning cards and put in (hash)map
     for _,num := range reg.FindAllString(first,-1) {
