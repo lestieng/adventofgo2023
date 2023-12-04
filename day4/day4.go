@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func parse_get_score(line string, part int) (score int) {
+func parse_get_score1(line string) (score int) {
     base_split := strings.Split(line,"|")
     first,second := strings.Split(base_split[0],":")[1],base_split[1]
     winning := make(map[int]int,0)
@@ -25,11 +25,27 @@ func parse_get_score(line string, part int) (score int) {
         parsednum,_ := strconv.Atoi(strings.TrimSpace(num))
         score += winning[parsednum] // not found yields 0 (default value)
     }
-    if part == 1 && score > 0 { 
-        return 1<<(score-1) 
-    } else {
-        return score
+    if score == 0 { return 0 }
+    return 1<<(score-1) 
+}
+
+func parse_get_score2(line string) (score int) {
+    base_split := strings.Split(line,"|")
+    first,second := strings.Split(base_split[0],":")[1],base_split[1]
+    winning := make(map[int]int,0)
+    // get winning cards and put in (hash)map
+    for _,num := range strings.Split(strings.TrimSpace(first)," ") {
+        if num == "" {continue} // single digits can produce blanks
+        parsednum,_ := strconv.Atoi(strings.TrimSpace(num))
+        winning[parsednum] = 1
     }
+    // check if my cards are among winning cards
+    for _,num := range strings.Split(strings.TrimSpace(second)," ") {
+        if num == "" {continue}
+        parsednum,_ := strconv.Atoi(strings.TrimSpace(num))
+        score += winning[parsednum] // not found yields 0 (default value)
+    }
+    return score
 }
 
 func cards_seen(cards_won []int,memo []int,start int, stop int) (seen int) {
@@ -47,13 +63,13 @@ func cards_seen(cards_won []int,memo []int,start int, stop int) (seen int) {
 func solution(file *os.File,part int) (ans int) {
         if part == 1 {
             for scanner := bufio.NewScanner(file); scanner.Scan(); {
-                ans += parse_get_score(scanner.Text(),1)
+                ans += parse_get_score1(scanner.Text())
             }
             return ans
         } else {
             cards_won := make([]int,0)
             for scanner := bufio.NewScanner(file); scanner.Scan(); {
-                cards_won = append(cards_won,parse_get_score(scanner.Text(),2))
+                cards_won = append(cards_won,parse_get_score2(scanner.Text()))
             }
             stop := len(cards_won)-1
             memo := make([]int,stop)
