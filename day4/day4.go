@@ -5,50 +5,31 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 )
 
-func parse_get_score1(line string) (score int) {
-    base_split := strings.Split(line,"|")
-    first,second := strings.Split(base_split[0],":")[1],base_split[1]
+func parse_get_score(line string) (score int) {
+    _,base,_ := strings.Cut(line,":") // discard text before ":"
+    first,second,_ := strings.Cut(base,"|") // split on "|"
+    reg := regexp.MustCompile(`[0-9]+`)
     winning := make(map[int]int,0)
     // get winning cards and put in (hash)map
-    for _,num := range strings.Split(strings.TrimSpace(first)," ") {
-        if num == "" {continue} // single digits can produce blanks
-        parsednum,_ := strconv.Atoi(strings.TrimSpace(num))
+    for _,num := range reg.FindAllString(first,-1) {
+        parsednum,_ := strconv.Atoi(num)
         winning[parsednum] = 1
     }
     // check if my cards are among winning cards
-    for _,num := range strings.Split(strings.TrimSpace(second)," ") {
-        if num == "" {continue}
-        parsednum,_ := strconv.Atoi(strings.TrimSpace(num))
-        score += winning[parsednum] // not found yields 0 (default value)
-    }
-    if score == 0 { return 0 }
-    return 1<<(score-1) 
-}
-
-func parse_get_score2(line string) (score int) {
-    base_split := strings.Split(line,"|")
-    first,second := strings.Split(base_split[0],":")[1],base_split[1]
-    winning := make(map[int]int,0)
-    // get winning cards and put in (hash)map
-    for _,num := range strings.Split(strings.TrimSpace(first)," ") {
-        if num == "" {continue} // single digits can produce blanks
-        parsednum,_ := strconv.Atoi(strings.TrimSpace(num))
-        winning[parsednum] = 1
-    }
-    // check if my cards are among winning cards
-    for _,num := range strings.Split(strings.TrimSpace(second)," ") {
-        if num == "" {continue}
-        parsednum,_ := strconv.Atoi(strings.TrimSpace(num))
+    for _,num := range reg.FindAllString(second,-1) {
+        parsednum,_ := strconv.Atoi(num)
         score += winning[parsednum] // not found yields 0 (default value)
     }
     return score
 }
 
 func cards_seen(cards_won []int,memo []int,start int, stop int) (seen int) {
+    if stop >= len(cards_won) { return 0 } // will never happen based on text
     for i := start; i <= stop; i++ {
         seen += 1
         if cards_won[i] == 0 { continue } // no subtrees to check
@@ -63,13 +44,14 @@ func cards_seen(cards_won []int,memo []int,start int, stop int) (seen int) {
 func solution(file *os.File,part int) (ans int) {
         if part == 1 {
             for scanner := bufio.NewScanner(file); scanner.Scan(); {
-                ans += parse_get_score1(scanner.Text())
+                score := parse_get_score(scanner.Text())
+                if score > 0 { ans += 1<<(score-1) }
             }
             return ans
         } else {
             cards_won := make([]int,0)
             for scanner := bufio.NewScanner(file); scanner.Scan(); {
-                cards_won = append(cards_won,parse_get_score2(scanner.Text()))
+                cards_won = append(cards_won,parse_get_score(scanner.Text()))
             }
             stop := len(cards_won)-1
             memo := make([]int,stop)
