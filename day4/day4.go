@@ -9,27 +9,21 @@ import (
 	"strings"
 )
 
-func parseline(line string) (winning []int, mine []int) {
+func parse_get_score(line string, part int) (score int) {
     base_split := strings.Split(line,"|")
     first,second := strings.Split(base_split[0],":")[1],base_split[1]
+    winning := make(map[int]int,0)
+    // get winning cards and put in (hash)map
     for _,num := range strings.Split(strings.TrimSpace(first)," ") {
         parsednum,_ := strconv.Atoi(strings.TrimSpace(num))
-        winning = append(winning,parsednum)    
+        winning[parsednum] = 0
     }
+    // check if my cards are among winning cards
     for _,num := range strings.Split(strings.TrimSpace(second)," ") {
         if num == "" {continue}
         parsednum,_ := strconv.Atoi(strings.TrimSpace(num))
-        mine = append(mine,parsednum)    
-    }
-    return winning,mine
-}
-
-func get_score(winning []int,mine []int,part int) (score int) {
-    for _,card := range winning {
-        for _,my := range mine {
-            if my == card {
-                score += 1
-            }
+        if _,found := winning[parsednum]; found {
+            score += 1
         }
     }
     if part == 1 && score > 0 { 
@@ -42,10 +36,10 @@ func get_score(winning []int,mine []int,part int) (score int) {
 func cards_seen(cards_won []int,memo []int,start int, stop int) (seen int) {
     for i:=start; i <= stop; i++ {
         seen += 1
-        if cards_won[i] > 0 && memo[i] == 0{
+        if cards_won[i] > 0 && memo[i] == 0{//haven't been down this subtree
             memo[i] = cards_seen(cards_won,memo,i+1,i+cards_won[i]) 
             seen += memo[i]
-        } else if cards_won[i] > 0 {
+        } else if cards_won[i] > 0 {//have been down this subtree, use memo
             seen += memo[i]
         }
     }
@@ -53,15 +47,16 @@ func cards_seen(cards_won []int,memo []int,start int, stop int) (seen int) {
 }
 
 func solution(file *os.File,part int) (ans int) {
-        cards_won := make([]int,0)
-        for scanner := bufio.NewScanner(file); scanner.Scan(); {
-            winning_cards,my_cards := parseline(scanner.Text())
-            ans += get_score(winning_cards,my_cards,1)
-            cards_won = append(cards_won,get_score(winning_cards,my_cards,2))
-        }
         if part == 1 {
+            for scanner := bufio.NewScanner(file); scanner.Scan(); {
+                ans += parse_get_score(scanner.Text(),1)
+            }
             return ans
         } else {
+            cards_won := make([]int,0)
+            for scanner := bufio.NewScanner(file); scanner.Scan(); {
+                cards_won = append(cards_won,parse_get_score(scanner.Text(),2))
+            }
             stop := len(cards_won)-1
             memo := make([]int,stop)
             return cards_seen(cards_won,memo,0,stop)
