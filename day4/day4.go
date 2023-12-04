@@ -15,16 +15,15 @@ func parse_get_score(line string, part int) (score int) {
     winning := make(map[int]int,0)
     // get winning cards and put in (hash)map
     for _,num := range strings.Split(strings.TrimSpace(first)," ") {
+        if num == "" {continue} // single digits can produce blanks
         parsednum,_ := strconv.Atoi(strings.TrimSpace(num))
-        winning[parsednum] = 0
+        winning[parsednum] = 1
     }
     // check if my cards are among winning cards
     for _,num := range strings.Split(strings.TrimSpace(second)," ") {
         if num == "" {continue}
         parsednum,_ := strconv.Atoi(strings.TrimSpace(num))
-        if _,found := winning[parsednum]; found {
-            score += 1
-        }
+        score += winning[parsednum] // not found yields 0 (default value)
     }
     if part == 1 && score > 0 { 
         return 1<<(score-1) 
@@ -34,14 +33,13 @@ func parse_get_score(line string, part int) (score int) {
 }
 
 func cards_seen(cards_won []int,memo []int,start int, stop int) (seen int) {
-    for i:=start; i <= stop; i++ {
+    for i := start; i <= stop; i++ {
         seen += 1
-        if cards_won[i] > 0 && memo[i] == 0{//haven't been down this subtree
+        if cards_won[i] == 0 { continue } // no subtrees to check
+        if memo[i] == 0 { // haven't been down this subtree, check and memoize
             memo[i] = cards_seen(cards_won,memo,i+1,i+cards_won[i]) 
-            seen += memo[i]
-        } else if cards_won[i] > 0 {//have been down this subtree, use memo
-            seen += memo[i]
         }
+        seen += memo[i]
     }
     return seen
 }
