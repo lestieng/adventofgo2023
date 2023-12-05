@@ -2,22 +2,48 @@ package main
 
 import (
 	"bufio"
-	"strings"
 	"fmt"
 	"log"
 	"os"
 	"regexp"
+	"slices"
 	"strconv"
+	"strings"
 )
 
 type rangeMap struct {
-    input_ranges [][]int
-    output_ranges [][]int
-    from string
-    to string
+    input_starts []int
+    input_stops []int
+    increments []int
+
 }
 
-func read_seeds1(seeds []string) (seednums []int) {
+type multiRange struct {
+    starts []int
+    stops []int
+}
+
+// lazy bubble sort implementation, no built-in argsort 
+// so need to do it manually in order to re-order the other slices
+func rangemap_sort(myMap *rangeMap) {
+    swaps := 1
+    for ; swaps > 0; { // while swaps > 0
+        swaps = 0
+        for i:=0; i<len(myMap.input_starts)-1; i++ {
+            if myMap.input_starts[i] > myMap.input_starts[i+1] {
+                myMap.input_starts[i], myMap.input_starts[i+1] = 
+                    myMap.input_starts[i+1], myMap.input_starts[i]
+                myMap.input_stops[i], myMap.input_stops[i+1] = 
+                    myMap.input_stops[i+1], myMap.input_stops[i]
+                myMap.increments[i], myMap.increments[i+1] = 
+                    myMap.increments[i+1], myMap.increments[i]
+                swaps++
+            }
+        }
+    }
+}
+
+func read_seeds(seeds []string) (seednums []int) {
     seednums = make([]int,0)
     for _,seed := range seeds { 
         temp,_ := strconv.Atoi(seed)
@@ -26,51 +52,82 @@ func read_seeds1(seeds []string) (seednums []int) {
     return seednums
 }
 
-func build_rangemap(scanner *bufio.Scanner) (newMap rangeMap) {
+func build_rangemap(scanner *bufio.Scanner) (newMap rangeMap, to string, maxval int) {
     _ = scanner.Scan()
     namereg := regexp.MustCompile(`\w+`)
     line := strings.ReplaceAll(scanner.Text(),"-"," ")
     names := namereg.FindAllString(line,-1)
-    newMap.from = names[0]
-    newMap.to = names[2]
+    to = names[2]
     reg := regexp.MustCompile(`\d+`)
-    for ; scanner.Scan(); {
+    for ; scanner.Scan(); { // this loops breaks on EOF or a blank line
         line = scanner.Text()
         if line == "" { break }
         nums := reg.FindAllString(line,-1)
         start_out, _ := strconv.Atoi(nums[0])
         start_in, _ := strconv.Atoi(nums[1])
         length, _ := strconv.Atoi(nums[2])
-        newMap.input_ranges = append(newMap.input_ranges,[]int{start_in,start_in+length-1})
-        newMap.output_ranges = append(newMap.output_ranges,[]int{start_out,start_out+length-1})
+        maxval = max(maxval,start_out+length-1)
+        newMap.input_starts = append(newMap.input_starts,start_in)
+        newMap.input_stops = append(newMap.input_stops,start_in+length-1)
+        newMap.increments = append(newMap.increments,start_out-start_in)
     }
-    return newMap
+    rangemap_sort(&newMap) 
+    return newMap,to,maxval
 }
 
-func build_loop(scanner *bufio.Scanner) (myRange []rangeMap, myMap map[string]int){
+func build_loop(scanner *bufio.Scanner) (myRange []rangeMap, maxval int){
     myRange = make([]rangeMap,0)
-    myMap = make(map[string]int,0)
-    testRange := build_rangemap(scanner)
+    testRange,to,_ := build_rangemap(scanner)
     myRange = append(myRange,testRange)
-    myMap[testRange.from] = 0
-    // fmt.Printf("%+v\n",myRange[0])
     for i:=0; ;i++ {
-        testRange := build_rangemap(scanner)
+        testRange,to,maxval = build_rangemap(scanner)
         myRange = append(myRange,testRange)
-        myMap[testRange.from] = i+1
-        // fmt.Printf("%+v\n",myRange[i+1])
-        if testRange.to == "location" { break }
+        if to == "location" { break }
     }
-    return myRange,myMap
+    // maxval is the largest value in the final output mapping
+    return myRange,maxval
 }
 
 func translate(input int, to rangeMap) (output int) {
-    for i,startstop := range to.input_ranges {
-        if input >= startstop[0] && input <= startstop[1] {
-            return to.output_ranges[i][0]+(input-startstop[0])
+    for i,start := range to.input_starts {
+        if input >= start && input <= to.input_stops[i] {
+            return input + to.increments[i]
         }
     }
     return input
+}
+
+func partition(from *multiRange,ind int,part int) {
+    if ind == len(from.starts)-1 {
+        from.starts = append(from.starts,part+1)
+        from.stops = append(from.stops,from.starts[ind])
+        from.stops[ind] = part
+    } else {
+        from.starts = slices.Insert(from.starts,ind+1,part+1)
+        from.stops = slices.Insert(from.stops,ind,part)
+    }
+}
+
+func translate_range(from *multiRange, to rangeMap) {
+    // check for overlap of range in from with range from to 
+    // if partial overlap, partition the range in from
+    for k := 0; k<len(from.starts); k++ { // loop extends if partitioned
+        for i,start := range to.input_starts {
+            tostops := to.input_stops[i]
+            if from.starts[k] >= start && 
+                from.starts[k] <= tostops {
+                if from.stops[k] <= tostops {
+                    from.starts[k] += to.increments[i]
+                    from.stops[k] += to.increments[i]
+                } else {
+                    partition(from,k,tostops)
+                    from.starts[k] += to.increments[i]
+                    from.stops[k] += to.increments[i]
+                }
+                break
+            }
+        }
+    }
 }
 
 func main() {
@@ -91,45 +148,34 @@ func main() {
     reg := regexp.MustCompile(`\d+`)
     seeds := reg.FindAllString(first_line,-1)
     _ = scanner.Scan()
-    myRange,_ := build_loop(scanner)
     var location int
     if part == 1 {
-        seednums := read_seeds1(seeds)
-        for i,seed := range seednums {
+        seednums := read_seeds(seeds)
+        myRange,maxval := build_loop(scanner)
+        location = maxval
+        for _,seed := range seednums {
             val := seed
             for _,rmaps := range myRange {
                 val = translate(val,rmaps)
             }
-            if i==0 {
-                location = val
-            } else {
-                location = min(location,val)
-            }
+            location = min(location,val)
         }
     } else {
-        first := true
-        for i:=0; i<len(seeds); {
+        myRange,maxval := build_loop(scanner)
+        location = maxval
+        for i:=0; i<len(seeds); i+=2 {
             seedstart,_ := strconv.Atoi(seeds[i])
-            i++
-            seedlength,_ := strconv.Atoi(seeds[i])
-            i++
-            for seed := seedstart; seed<seedstart+seedlength-1; seed++ {
-                val := seed
-                for _,rmaps := range myRange {
-                    val = translate(val,rmaps)
-                }
-                if first {
-                    location = val
-                    first = false
-                } else {
-                    location = min(location,val)
-                }
-
+            seedlength,_ := strconv.Atoi(seeds[i+1])
+            seedRange := multiRange {
+                starts: append([]int{},seedstart),
+                stops:  append([]int{},seedstart+seedlength-1),
             }
+            for _,rmaps := range myRange {
+                translate_range(&seedRange,rmaps)
+            }
+            location = min(location,slices.Min(seedRange.starts))
         } 
     }
-    // fmt.Println(translate(seednums[0],myRange[myMap["seed"]]))
-   
     fmt.Println("The answer is: ", location)
 }
 
