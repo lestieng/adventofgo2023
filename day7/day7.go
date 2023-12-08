@@ -5,21 +5,18 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
 )
 
-const ONE_OF_KIND = 0
-const ONE_PAIR = 1
-const TWO_PAIR = 2
-const THREE_OF_KIND = 3
-const FULL_HOUSE = 4
-const FOUR_OF_KIND = 5
-const FIVE_OF_KIND = 6
+const ONE_OF_KIND,ONE_PAIR,TWO_PAIR,THREE_OF_KIND,
+    FULL_HOUSE,FOUR_OF_KIND,FIVE_OF_KIND = 0,1,2,3,4,5,6
 
 var ofAKind = map[int]int {
-    2: ONE_PAIR, 3: THREE_OF_KIND, 4: FOUR_OF_KIND, 5: FIVE_OF_KIND,
+    1: ONE_OF_KIND, 2: ONE_PAIR, 3: THREE_OF_KIND, 
+    4: FOUR_OF_KIND, 5: FIVE_OF_KIND,
 }
 
 var cardValues = map[rune]int {
@@ -40,39 +37,30 @@ type cardHand struct {
 }
 
 func set_type_score1(type_tracker []int) (type_score int) {
-    switch num := len(type_tracker); num {
-    case 0:
-        type_score = ONE_OF_KIND
-    case 1:
-        type_score = ofAKind[type_tracker[0]]
-    case 2:
-        if type_tracker[0] != type_tracker[1] {
-            type_score = FULL_HOUSE
-        } else {
-            type_score = TWO_PAIR
-        }
+    switch {
+    case reflect.DeepEqual(type_tracker,[]int{2,2,1}):
+        return TWO_PAIR
+    case reflect.DeepEqual(type_tracker,[]int{3,2}):
+        return FULL_HOUSE
+    default:
+        return ofAKind[type_tracker[0]]
     }
-    return type_score
 } 
 
-func set_type_score2(init_score int,type_tracker []int,jcount int) (type_score int) {
+func set_type_score2(init_score int,type_tracker []int,jcount int) (
+                    type_score int) {
     switch ; init_score {
-    case ONE_OF_KIND:
-        type_score = ONE_PAIR
     case FULL_HOUSE:
-        type_score = FIVE_OF_KIND
+        return FIVE_OF_KIND
     case TWO_PAIR:
-       if jcount == 1 {
-            type_score = FULL_HOUSE
-        } else {
-            type_score = FOUR_OF_KIND
+       if jcount == 1 { // {N1,N1,N2,N2,J} => {N1,N1,N1,N2,N2}
+            return FULL_HOUSE
+        } else { // {J,J,N1,N1,N2} => {N1,N1,N1,N1,N2}
+            return FOUR_OF_KIND
         }
-    case ofAKind[type_tracker[0]]:
-        type_score = ofAKind[type_tracker[0]+1]
-    default: 
-        type_score = init_score
+    default:
+        return ofAKind[type_tracker[0]+1]
     }
-    return type_score
 } 
 
 func set_scores1(hand string) (type_score int, card_scores []int) {
@@ -82,12 +70,14 @@ func set_scores1(hand string) (type_score int, card_scores []int) {
         card_scores = append(card_scores,cardValues[c])
         if len(remaining) > 0 {
             count := strings.Count(remaining,string(c))
-            if count > 1 {
+            if count > 0 {
                 type_tracker = append(type_tracker,count)
             }
             remaining = strings.ReplaceAll(remaining,string(c),"")
         }
     }
+    slices.Sort(type_tracker)
+    slices.Reverse(type_tracker)
     return set_type_score1(type_tracker),card_scores
 }
 
@@ -100,12 +90,14 @@ func set_scores2(hand string) (type_score int, card_scores []int) {
         if c == 'J' { jcount++ }
         if len(remaining) > 0 {
             count := strings.Count(remaining,string(c))
-            if count > 1 {
+            if count > 0 {
                 type_tracker = append(type_tracker,count)
             }
             remaining = strings.ReplaceAll(remaining,string(c),"")
         }
     }
+    slices.Sort(type_tracker)
+    slices.Reverse(type_tracker)
     type_score = set_type_score1(type_tracker)
     if jcount > 0 && jcount < 5 {
         type_score = set_type_score2(type_score,type_tracker,jcount)
