@@ -47,17 +47,16 @@ func set_type_score1(type_tracker []int) (type_score int) {
     }
 } 
 
-func set_type_score2(init_score int,type_tracker []int,jcount int) (
-                    type_score int) {
-    switch ; init_score {
-    case FULL_HOUSE:
-        return FIVE_OF_KIND
-    case TWO_PAIR:
+func set_type_score2(type_tracker []int,jcount int) ( type_score int) {
+    switch {
+    case reflect.DeepEqual(type_tracker,[]int{2,2,1}):
        if jcount == 1 { // {N1,N1,N2,N2,J} => {N1,N1,N1,N2,N2}
             return FULL_HOUSE
         } else { // {J,J,N1,N1,N2} => {N1,N1,N1,N1,N2}
             return FOUR_OF_KIND
         }
+    case reflect.DeepEqual(type_tracker,[]int{3,2}):
+        return FIVE_OF_KIND
     default:
         return ofAKind[type_tracker[0]+1]
     }
@@ -98,9 +97,10 @@ func set_scores2(hand string) (type_score int, card_scores []int) {
     }
     slices.Sort(type_tracker)
     slices.Reverse(type_tracker)
-    type_score = set_type_score1(type_tracker)
     if jcount > 0 && jcount < 5 {
-        type_score = set_type_score2(type_score,type_tracker,jcount)
+        type_score = set_type_score2(type_tracker,jcount)
+    } else {
+        type_score = set_type_score1(type_tracker)
     }
     return type_score,card_scores
 }
