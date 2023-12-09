@@ -18,26 +18,21 @@ func get_nums(line string,reg *regexp.Regexp) (nums []int) {
     return nums
 }
 
-func predict_next_in_sequence(nums []int) int {
-    if len(slices.Compact(slices.Clone(nums)))==1 { //checks number of unique
-        return nums[len(nums)-1]
-    }
-    newnums := make([]int,0)
+func differences(nums []int) (diffs []int) {
     for i:=1; i<len(nums); i++ {
-        newnums = append(newnums,nums[i]-nums[i-1])
+        diffs = append(diffs,nums[i]-nums[i-1])
     }
-    return nums[len(nums)-1] + predict_next_in_sequence(newnums)
+    return diffs
+}
+//Need to Clone because sometimes Compact changes underlying slice ?????
+func predict_next_in_sequence(nums []int) int {
+    if len(slices.Compact(slices.Clone(nums))) == 1 { return nums[len(nums)-1] }
+    return nums[len(nums)-1] + predict_next_in_sequence(differences(nums))
 }
 
 func predict_previous_in_sequence(nums []int) int {
-    if len(slices.Compact(slices.Clone(nums)))==1 {
-        return nums[0]
-    }
-    newnums := make([]int,0)
-    for i:=1; i<len(nums); i++ {
-        newnums = append(newnums,nums[i]-nums[i-1])
-    }
-    return nums[0] - predict_previous_in_sequence(newnums)
+    if len(slices.Compact(slices.Clone(nums))) == 1 { return nums[0] }
+    return nums[0] - predict_previous_in_sequence(differences(nums))
 }
 
 func main() {   
@@ -46,10 +41,12 @@ func main() {
 
     reg := regexp.MustCompile(`-?\d+`)
     ans := 0 
-    for scanner := bufio.NewScanner(file); scanner.Scan(); {
-        if part == 1{
+    if part == 1{
+        for scanner := bufio.NewScanner(file); scanner.Scan(); {
             ans += predict_next_in_sequence(get_nums(scanner.Text(),reg))
-        } else {
+        }
+    } else {
+        for scanner := bufio.NewScanner(file); scanner.Scan(); {
             ans += predict_previous_in_sequence(get_nums(scanner.Text(),reg))
         }
     }
