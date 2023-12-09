@@ -3,10 +3,9 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"regexp"
-	"strconv"
+        "adventofgo2023/lib"
 )
 
 type Node struct {
@@ -24,7 +23,6 @@ func gcd (a int, b int) int {
         return gcd(a,b%a)
     }
     return 1
-
 }
 
 func lcm(a int,b int) int {
@@ -55,16 +53,7 @@ func parse_input(scanner *bufio.Scanner) (Nodes []Node,
 }
 
 func main() {
-    file,err := os.Open(os.Args[1])
-    if err != nil {
-        log.Fatal("problem parsing first cmd line arg (or opening file)",err)
-    }
-    defer file.Close()
-
-    part,err := strconv.Atoi(os.Args[2])
-    if err != nil {
-        log.Fatal("problem parsing second cmd line arg",err)
-    }
+    file,part := lib.File_part_from_cmdline(os.Args)
     defer file.Close()
 
     scanner := bufio.NewScanner(file)
@@ -77,16 +66,6 @@ func main() {
     ans := 0
     Nodes,nodeMappings,starts := parse_input(scanner)
     if part == 1 {
-        // Nodes,nodeMappings,starts := parse_input(scanner)
-        // for i := 0; scanner.Scan(); {
-        //     reg := regexp.MustCompile(`[A-Z]{3}`)
-        //     nodes := reg.FindAllString(scanner.Text(),-1)
-        //     nodeMappings[nodes[0]] = i
-        //     Nodes = append(Nodes,Node{children: map[byte]string{
-        //         'L': nodes[1], 'R': nodes[2]},
-        //         name: nodes[0]})
-        //     i++
-        // }
         current := nodeMappings["AAA"]
         for ; current != nodeMappings["ZZZ"]; steps++ {
             current_instruction := instruction[steps%num_instructions]
@@ -114,6 +93,5 @@ func main() {
         // the individual steps needed
         ans = lcm_multi(steps_to_complete)
     }
-
     fmt.Println("The answer is ",ans)
 }

@@ -1,4 +1,4 @@
-module adventofgo2023/day8
+module adventofgo2023/day9
 
 go 1.21.4
 
